@@ -1,236 +1,723 @@
-
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>海洋曼陀羅螢幕保護程式</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>專注發電 Focus Power</title>
   <style>
-    /*
-      使用說明：
-      1. 將本檔案存成 ocean_mandala_screensaver.html。
-      2. 直接用瀏覽器（Chrome / Edge / Safari）開啟。
-      3. 按 F11（或瀏覽器全螢幕快捷鍵）進入全螢幕，就可以當作螢幕保護動畫。
+    :root {
+      --night: radial-gradient(circle at 20% 20%, rgba(78, 118, 163, 0.32), transparent 35%),
+        radial-gradient(circle at 80% 10%, rgba(111, 92, 160, 0.38), transparent 32%),
+        #0d1a2e;
+      --board: #0f1727;
+      --board-light: #8ff1e3;
+      --board-dim: #3e6a75;
+      --tree-dark: #0f2a22;
+      --tree-shadow: #0a1e18;
+      --tree-accent: #1f4235;
+      --light-off: #3a4b46;
+      --light-on: #c2fbd7;
+      --light-glow: 0 0 12px rgba(178, 255, 230, 0.8);
+      --gold: #ffd166;
+      --panel: rgba(12, 24, 39, 0.6);
+      --text: #e7f4ff;
+      --muted: #7ea0b9;
+      --danger: #f05d5e;
+      --success: #76f7bf;
+    }
 
-      效果：
-      - 以「海洋波浪」為意象的黑白曼陀羅線條。
-      - 線條會像手繪一樣，從中心向外、逐步被畫出來。
-      - 當畫面畫滿後會停留片刻，再緩慢淡出，然後重新開始新一輪繪製。
-    */
+    * {
+      box-sizing: border-box;
+    }
 
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--night);
+      font-family: "Noto Sans TC", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 24px 22px 32px;
       overflow: hidden;
+    }
+
+    main {
+      position: relative;
+      width: min(1200px, 100%);
+      background: linear-gradient(180deg, rgba(18, 33, 53, 0.8), rgba(12, 24, 39, 0.8));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .scene {
+      position: relative;
       height: 100%;
-      width: 100%;
-      background: #fdfcf7; /* 類紙張底色，黑白手繪感 */
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 640px;
+      padding: 36px 32px 90px;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 20px;
+      isolation: isolate;
     }
 
-    canvas {
-      display: block;
+    .sky {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.1), transparent 36%), var(--night);
+      z-index: 1;
     }
 
-    #hint {
-      position: fixed;
-      left: 50%;
-      bottom: 20px;
-      transform: translateX(-50%);
-      color: rgba(0, 0, 0, 0.45);
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+    .sky::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(2px 2px at 20% 20%, rgba(255, 255, 255, 0.42), transparent),
+        radial-gradient(2px 2px at 80% 35%, rgba(255, 255, 255, 0.28), transparent),
+        radial-gradient(1px 1px at 60% 50%, rgba(255, 255, 255, 0.26), transparent),
+        radial-gradient(1px 1px at 30% 65%, rgba(255, 255, 255, 0.18), transparent);
+      animation: twinkle 6s ease-in-out infinite;
+      opacity: 0.8;
+    }
+
+    @keyframes twinkle {
+      0%,
+      100% {
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .city {
+      position: absolute;
+      inset: auto 0 0;
+      height: 40%;
+      z-index: 2;
+      overflow: hidden;
       pointer-events: none;
-      user-select: none;
+    }
+
+    .building {
+      position: absolute;
+      bottom: 0;
+      width: 180px;
+      border-radius: 6px 6px 0 0;
+      background: linear-gradient(180deg, rgba(21, 39, 63, 0.9), rgba(10, 18, 28, 0.95));
+      box-shadow: inset 0 2px 8px rgba(255, 255, 255, 0.05);
+    }
+
+    .building.small {
+      width: 120px;
+      background: linear-gradient(180deg, rgba(20, 34, 52, 0.85), rgba(6, 12, 20, 0.9));
+    }
+
+    .building::after {
+      content: "";
+      position: absolute;
+      inset: 14px 14px;
+      background-image: repeating-linear-gradient(90deg, rgba(255, 224, 146, 0.08), rgba(255, 224, 146, 0.08) 12px, transparent 12px, transparent 30px),
+        repeating-linear-gradient(180deg, rgba(255, 224, 146, 0.08), rgba(255, 224, 146, 0.08) 12px, transparent 12px, transparent 30px);
+      mix-blend-mode: screen;
+    }
+
+    .building:nth-child(1) {
+      left: 40px;
+      height: 38%;
+    }
+
+    .building:nth-child(2) {
+      left: 200px;
+      height: 52%;
+      background: linear-gradient(180deg, rgba(18, 36, 61, 0.9), rgba(5, 10, 18, 0.92));
+    }
+
+    .building:nth-child(3) {
+      left: 380px;
+      height: 45%;
+    }
+
+    .building:nth-child(4) {
+      left: 580px;
+      height: 60%;
+    }
+
+    .building:nth-child(5) {
+      left: 760px;
+      height: 42%;
+    }
+
+    .snow {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .snow span {
+      position: absolute;
+      top: -10px;
+      width: 6px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      filter: blur(0.3px);
+      animation: snow 12s linear infinite;
+      opacity: 0.8;
+    }
+
+    @keyframes snow {
+      0% {
+        transform: translateY(-10px);
+      }
+      100% {
+        transform: translateY(120vh);
+      }
+    }
+
+    .tree-area {
+      position: relative;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tree {
+      position: relative;
+      width: 420px;
+      height: 520px;
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.55));
+    }
+
+    .tree-body {
+      position: absolute;
+      bottom: 46px;
+      width: 320px;
+      height: 420px;
+      background: linear-gradient(180deg, var(--tree-accent), var(--tree-dark));
+      clip-path: polygon(50% 0%, 84% 24%, 66% 26%, 90% 44%, 68% 46%, 88% 64%, 62% 66%, 50% 90%, 38% 66%, 12% 64%, 32% 46%, 10% 44%, 34% 26%, 16% 24%);
+      border-radius: 12px;
+      box-shadow: inset 0 -12px 30px rgba(0, 0, 0, 0.35), inset 0 12px 24px rgba(255, 255, 255, 0.04);
+      overflow: hidden;
+    }
+
+    .tree-body::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.06), transparent 60%);
+      mix-blend-mode: screen;
+    }
+
+    .tree-shadow {
+      position: absolute;
+      bottom: 32px;
+      width: 240px;
+      height: 22px;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.32), transparent 60%);
+      filter: blur(8px);
+      z-index: -1;
+    }
+
+    .tree-star {
+      position: absolute;
+      top: 40px;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(145deg, #c3c8ce, #d6d9dd);
+      clip-path: polygon(50% 0%, 61% 38%, 100% 38%, 68% 59%, 79% 100%, 50% 76%, 21% 100%, 32% 59%, 0% 38%, 39% 38%);
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+      transition: 0.8s ease;
+      transform-origin: center;
+      opacity: 0.72;
+    }
+
+    .tree-star.lit {
+      background: linear-gradient(145deg, #ffe08a, #ffd166, #fff2c6);
+      box-shadow: 0 0 20px rgba(255, 209, 102, 0.9), 0 0 40px rgba(255, 232, 165, 0.7);
+      animation: pulse 2.4s ease-in-out infinite;
+      opacity: 1;
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.08) rotate(-2deg);
+      }
+    }
+
+    .light-layers {
+      position: absolute;
+      inset: 90px 40px 90px;
+      display: grid;
+      grid-template-rows: repeat(12, 1fr);
+      gap: 6px;
+      width: 80%;
+      z-index: 2;
+    }
+
+    .light-layer {
+      --spread: 60%;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      width: calc(40% + var(--spread));
+      margin: 0 auto;
+      opacity: 0.75;
+      transition: 0.6s ease;
+    }
+
+    .light-layer .bulb {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--light-off);
+      box-shadow: none;
+      opacity: 0.45;
+      transition: 0.5s ease;
+    }
+
+    .light-layer.active {
+      opacity: 1;
+    }
+
+    .light-layer.active .bulb {
+      background: var(--light-on);
+      box-shadow: var(--light-glow);
+      opacity: 1;
+    }
+
+    .light-layer.final .bulb {
+      background: var(--bulb-color, #ffd166);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.35), 0 0 20px rgba(255, 198, 124, 0.7);
+      animation: shimmer 1.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes shimmer {
+      0% {
+        transform: translateY(0);
+        filter: saturate(1);
+      }
+      100% {
+        transform: translateY(-1px) scale(1.04);
+        filter: saturate(1.15);
+      }
+    }
+
+    .trunk {
+      position: absolute;
+      bottom: 10px;
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(180deg, #4a3726, #2d2219);
+      border-radius: 6px;
+      box-shadow: inset 0 6px 10px rgba(255, 255, 255, 0.08);
+    }
+
+    .message {
+      margin-top: 20px;
+      min-height: 32px;
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--gold);
+      opacity: 0;
+      transition: 0.6s ease;
+    }
+
+    .message.show {
+      opacity: 1;
+    }
+
+    .panel {
+      position: relative;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 16px;
+      padding-top: 30px;
+    }
+
+    .board {
+      width: 100%;
+      background: var(--board);
+      padding: 28px 20px;
+      border-radius: 14px;
+      box-shadow: inset 0 0 0 1px rgba(143, 241, 227, 0.16), 0 12px 28px rgba(0, 0, 0, 0.38);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .board::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 1px dashed rgba(143, 241, 227, 0.16);
+      border-radius: 10px;
+      pointer-events: none;
+    }
+
+    .timer-label {
+      letter-spacing: 0.24em;
+      color: var(--board-dim);
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    #timer {
+      display: block;
+      font-family: "Share Tech Mono", "Roboto Mono", monospace;
+      font-size: clamp(64px, 7vw, 86px);
+      letter-spacing: 0.16em;
+      color: var(--board-light);
+      text-shadow: 0 0 8px rgba(143, 241, 227, 0.55);
+      text-align: right;
+      line-height: 1;
+    }
+
+    .controls {
+      background: var(--panel);
+      padding: 16px;
+      border-radius: 12px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
+    }
+
+    label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    input[type='number'] {
+      width: 92px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(9, 15, 25, 0.6);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+    }
+
+    input[type='number']::-webkit-inner-spin-button {
+      opacity: 0.5;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(180deg, rgba(143, 241, 227, 0.08), rgba(143, 241, 227, 0.02));
+      color: var(--text);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: 0.25s ease;
+      min-width: 110px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .primary {
+      background: linear-gradient(180deg, rgba(118, 247, 191, 0.22), rgba(118, 247, 191, 0.08));
+      color: #dafced;
+      border-color: rgba(118, 247, 191, 0.4);
+    }
+
+    .danger {
+      background: linear-gradient(180deg, rgba(240, 93, 94, 0.18), rgba(240, 93, 94, 0.08));
+      border-color: rgba(240, 93, 94, 0.4);
+    }
+
+    .secondary {
+      background: linear-gradient(180deg, rgba(126, 160, 185, 0.22), rgba(126, 160, 185, 0.08));
+      border-color: rgba(126, 160, 185, 0.35);
+    }
+
+    .legend {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.05em;
+    }
+
+    @media (max-width: 1020px) {
+      .scene {
+        grid-template-columns: 1fr;
+        padding: 28px 24px 82px;
+      }
+
+      .tree {
+        width: 340px;
+        height: 460px;
+      }
+
+      .tree-body {
+        width: 270px;
+        height: 360px;
+      }
+
+      .light-layers {
+        inset: 80px 34px 80px;
+      }
+
+      .panel {
+        align-items: center;
+      }
+
+      #timer {
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
-  <canvas id="mandala"></canvas>
-  <div id="hint">全螢幕觀看以模擬螢幕保護程式效果</div>
+  <main>
+    <div class="sky"></div>
+    <div class="city">
+      <div class="building small"></div>
+      <div class="building"></div>
+      <div class="building small"></div>
+      <div class="building"></div>
+      <div class="building small"></div>
+    </div>
+    <div class="snow" id="snow"></div>
+    <section class="scene">
+      <section class="tree-area" aria-label="專注發電聖誕樹">
+        <div class="tree">
+          <div class="tree-star" id="treeStar"></div>
+          <div class="tree-body"></div>
+          <div class="light-layers" id="lightLayers">
+            <div class="light-layer" style="--spread: 28%" data-count="4"></div>
+            <div class="light-layer" style="--spread: 35%" data-count="5"></div>
+            <div class="light-layer" style="--spread: 42%" data-count="5"></div>
+            <div class="light-layer" style="--spread: 48%" data-count="6"></div>
+            <div class="light-layer" style="--spread: 56%" data-count="6"></div>
+            <div class="light-layer" style="--spread: 64%" data-count="7"></div>
+            <div class="light-layer" style="--spread: 72%" data-count="7"></div>
+            <div class="light-layer" style="--spread: 80%" data-count="8"></div>
+            <div class="light-layer" style="--spread: 88%" data-count="8"></div>
+            <div class="light-layer" style="--spread: 96%" data-count="9"></div>
+            <div class="light-layer" style="--spread: 104%" data-count="9"></div>
+            <div class="light-layer" style="--spread: 112%" data-count="10"></div>
+          </div>
+          <div class="trunk"></div>
+          <div class="tree-shadow"></div>
+        </div>
+        <div class="message" id="message">&nbsp;</div>
+      </section>
+
+      <section class="panel" aria-label="倒數控制區">
+        <div class="board">
+          <div class="timer-label">focus power board</div>
+          <span id="timer">25:00</span>
+        </div>
+        <div class="controls">
+          <div>
+            <label for="minutes">倒數分鐘</label>
+            <input type="number" id="minutes" min="1" max="180" value="25" />
+          </div>
+          <div class="button-row">
+            <button class="primary" id="start">開始專注</button>
+            <button class="secondary" id="pause">暫停</button>
+            <button class="danger" id="reset">重設</button>
+          </div>
+          <div class="legend">點亮聖誕樹，為城市發一輪電</div>
+        </div>
+      </section>
+    </section>
+  </main>
 
   <script>
-    (function () {
-      const canvas = document.getElementById('mandala');
-      const ctx = canvas.getContext('2d');
-      let w, h, cx, cy, baseSize;
+    const timerEl = document.getElementById('timer');
+    const minutesInput = document.getElementById('minutes');
+    const startBtn = document.getElementById('start');
+    const pauseBtn = document.getElementById('pause');
+    const resetBtn = document.getElementById('reset');
+    const lightLayers = Array.from(document.querySelectorAll('.light-layer'));
+    const treeStar = document.getElementById('treeStar');
+    const messageEl = document.getElementById('message');
 
-      function resize() {
-        w = window.innerWidth;
-        h = window.innerHeight;
-        canvas.width = w;
-        canvas.height = h;
-        cx = w / 2;
-        cy = h / 2;
-        baseSize = Math.min(w, h) * 0.45; // 曼陀羅最大半徑
-      }
+    let totalSeconds = parseInt(minutesInput.value, 10) * 60;
+    let remainingSeconds = totalSeconds;
+    let timerId = null;
+    let running = false;
 
-      window.addEventListener('resize', resize);
-      resize();
+    function pad(value) {
+      return value.toString().padStart(2, '0');
+    }
 
-      const TAU = Math.PI * 2;
-      const SYMMETRY = 10;          // 曼陀羅對稱數量（可改 8、10、12）
-      const SECTOR_ANGLE = TAU / SYMMETRY;
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${pad(m)}:${pad(s)}`;
+    }
 
-      let strokes = [];             // 每一筆基本曲線（只存一個扇形，再旋轉複製）
-      let totalSegments = 0;        // 所有曲線段數加總，用來控制「畫滿前的時間」
-      let drawCursor = 0;           // 目前已「畫到」第幾個 segment（逐步繪製）
-      let drawSpeed = 300;          // 每秒繪製多少 segment，稍後會依 totalSegments 調整
+    function setMessage(text, visible = true) {
+      messageEl.textContent = text;
+      messageEl.classList.toggle('show', visible);
+    }
 
-      let mode = 'draw';            // draw | hold | fade
-      let modeTime = 0;             // 當前 mode 已經持續多久（秒）
-
-      function rand(min, max) {
-        return min + Math.random() * (max - min);
-      }
-
-      function generateStrokes() {
-        strokes = [];
-        totalSegments = 0;
-        drawCursor = 0;
-        mode = 'draw';
-        modeTime = 0;
-
-        const layers = 10;           // 曼陀羅的「圈數」
-        const perLayer = 18;         // 每一圈的基本波浪曲線數量
-        const minR = baseSize * 0.08;
-        const maxR = baseSize * 1.0;
-
-        for (let layer = 0; layer < layers; layer++) {
-          const tLayer = layers <= 1 ? 0 : layer / (layers - 1);
-          const baseR = minR + (maxR - minR) * tLayer; // 該圈大致半徑
-          const amp = baseR * rand(0.05, 0.16);        // 波浪振幅
-
-          for (let j = 0; j < perLayer; j++) {
-            const points = [];
-            const segs = Math.floor(rand(45, 80));     // 一筆線要分成幾小段
-
-            // 一筆線在單一扇形中的角度範圍
-            const arcSpan = SECTOR_ANGLE * rand(0.55, 0.9);
-            const centerAngle = rand(-SECTOR_ANGLE * 0.25, SECTOR_ANGLE * 0.25);
-            const startAngle = centerAngle - arcSpan / 2;
-
-            const waveFreq = rand(1.5, 3.5);           // 波浪頻率
-            const radialJitter = baseR * 0.04;         // 半徑抖動，模擬手感
-
-            for (let i = 0; i <= segs; i++) {
-              const t = i / segs; // 0 ~ 1
-              const ease = 0.5 - 0.5 * Math.cos(t * Math.PI); // 線性 + 一點點緩和
-
-              const angle = startAngle + arcSpan * ease;
-              let r = baseR + amp * Math.sin(t * TAU * waveFreq + rand(-0.4, 0.4));
-              r += rand(-radialJitter, radialJitter);
-
-              // 讓比較外圈的線條有一點「海面浪花」的碎裂感
-              if (tLayer > 0.6) {
-                r += amp * 0.4 * Math.sin(t * TAU * rand(2, 4));
-              }
-
-              points.push({ r, angle });
-            }
-
-            strokes.push({ points });
-            totalSegments += segs;
-          }
+    function buildBulbs() {
+      const palette = ['#ff9f68', '#ffa7c4', '#8ef1b0', '#8cd0ff', '#ffd166', '#c7b9ff'];
+      lightLayers.forEach((layer, idx) => {
+        const count = Number(layer.dataset.count || 5);
+        layer.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+          const bulb = document.createElement('span');
+          bulb.className = 'bulb';
+          bulb.style.setProperty('--bulb-color', palette[(idx + i) % palette.length]);
+          layer.appendChild(bulb);
         }
+      });
+    }
 
-        // 依照總段數調整繪製速度，約 60 秒畫滿
-        const targetDrawSeconds = 60;
-        drawSpeed = totalSegments / targetDrawSeconds;
-      }
-
-      function drawStrokeSegment(p0, p1, rotation) {
-        const a0 = p0.angle + rotation;
-        const a1 = p1.angle + rotation;
-        const x0 = cx + p0.r * Math.cos(a0);
-        const y0 = cy + p0.r * Math.sin(a0);
-        const x1 = cx + p1.r * Math.cos(a1);
-        const y1 = cy + p1.r * Math.sin(a1);
-
-        ctx.moveTo(x0, y0);
-        ctx.lineTo(x1, y1);
-      }
-
-      function renderMandala(currentSegments) {
-        ctx.save();
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = '#111';   // 黑色線條
-        ctx.lineWidth = 0.9;        // 基本線寬
-
-        let remaining = currentSegments;
-
-        for (let s = 0; s < strokes.length; s++) {
-          if (remaining <= 0) break;
-          const { points } = strokes[s];
-          const segCount = points.length - 1;
-          const drawCount = Math.min(segCount, remaining);
-          if (drawCount <= 0) continue;
-
-          for (let sym = 0; sym < SYMMETRY; sym++) {
-            const rot = sym * SECTOR_ANGLE;
-            ctx.beginPath();
-            for (let i = 0; i < drawCount; i++) {
-              const p0 = points[i];
-              const p1 = points[i + 1];
-              drawStrokeSegment(p0, p1, rot);
-            }
-            ctx.stroke();
-          }
-
-          remaining -= drawCount;
-        }
-
-        ctx.restore();
-      }
-
-      let lastTime = performance.now();
-
-      function loop(now) {
-        const dt = (now - lastTime) / 1000;
-        lastTime = now;
-        modeTime += dt;
-
-        // 背景處理：依不同階段有不同效果
-        if (mode === 'fade') {
-          // 漸漸回到紙張顏色，保留一點殘影感
-          ctx.fillStyle = 'rgba(253, 252, 247, 0.15)';
-          ctx.fillRect(0, 0, w, h);
+    function updateLights(progress) {
+      const litLayers = Math.floor(progress * lightLayers.length);
+      lightLayers.forEach((layer, index) => {
+        const bulbs = layer.querySelectorAll('.bulb');
+        if (index < litLayers) {
+          layer.classList.add('active');
+          bulbs.forEach((bulb) => bulb.style.background = bulb.style.getPropertyValue('--bulb-color') || '');
         } else {
-          // 繪製階段與停留階段，直接清成乾淨紙面
-          ctx.fillStyle = '#fdfcf7';
-          ctx.fillRect(0, 0, w, h);
+          layer.classList.remove('active', 'final');
+          bulbs.forEach((bulb) => bulb.style.background = '');
         }
+      });
+    }
 
-        if (mode === 'draw') {
-          drawCursor += drawSpeed * dt;
-          if (drawCursor >= totalSegments) {
-            drawCursor = totalSegments;
-            mode = 'hold';
-            modeTime = 0;
-          }
-          renderMandala(drawCursor);
-        } else if (mode === 'hold') {
-          // 畫滿後，畫面維持靜止幾秒
-          renderMandala(totalSegments);
-          if (modeTime > 5) { // 停留 5 秒
-            mode = 'fade';
-            modeTime = 0;
-          }
-        } else if (mode === 'fade') {
-          // 淡出階段：仍重畫一次完整曼陀羅，但被上面的半透明背景慢慢蓋掉
-          renderMandala(totalSegments);
-          if (modeTime > 4) { // 約 4 秒淡出
-            generateStrokes(); // 重新產生新圖案
-          }
-        }
+    function celebrate() {
+      treeStar.classList.add('lit');
+      lightLayers.forEach((layer) => {
+        layer.classList.add('final');
+        layer.classList.add('active');
+      });
+      setMessage('專注完成，聖誕樹亮起來了！');
+    }
 
-        requestAnimationFrame(loop);
+    function resetTree() {
+      treeStar.classList.remove('lit');
+      lightLayers.forEach((layer) => {
+        layer.classList.remove('active', 'final');
+      });
+      setMessage('\u00a0', false);
+    }
+
+    function updateTimerDisplay() {
+      timerEl.textContent = formatTime(remainingSeconds);
+    }
+
+    function tick() {
+      if (!running) return;
+      if (remainingSeconds <= 0) {
+        clearInterval(timerId);
+        timerId = null;
+        running = false;
+        celebrate();
+        return;
       }
 
-      generateStrokes();
-      lastTime = performance.now();
-      requestAnimationFrame(loop);
-    })();
+      remainingSeconds -= 1;
+      const elapsed = totalSeconds - remainingSeconds;
+      const progress = totalSeconds === 0 ? 0 : Math.min(elapsed / totalSeconds, 1);
+      updateLights(progress);
+      updateTimerDisplay();
+
+      if (remainingSeconds === 0) {
+        celebrate();
+      }
+    }
+
+    function startTimer() {
+      if (running) return;
+      totalSeconds = Math.max(1, parseInt(minutesInput.value, 10) || 0) * 60;
+      if (remainingSeconds === 0 || remainingSeconds === totalSeconds) {
+        resetTree();
+        remainingSeconds = totalSeconds;
+        updateLights(0);
+        updateTimerDisplay();
+      }
+      running = true;
+      timerId = setInterval(tick, 1000);
+    }
+
+    function pauseTimer() {
+      running = false;
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      totalSeconds = Math.max(1, parseInt(minutesInput.value, 10) || 0) * 60;
+      remainingSeconds = totalSeconds;
+      resetTree();
+      updateLights(0);
+      updateTimerDisplay();
+    }
+
+    startBtn.addEventListener('click', startTimer);
+    pauseBtn.addEventListener('click', pauseTimer);
+    resetBtn.addEventListener('click', resetTimer);
+
+    buildBulbs();
+    updateTimerDisplay();
+    updateLights(0);
+
+    function createSnow(count = 30) {
+      const snow = document.getElementById('snow');
+      const width = snow.clientWidth || window.innerWidth;
+      const height = snow.clientHeight || window.innerHeight;
+      for (let i = 0; i < count; i++) {
+        const flake = document.createElement('span');
+        const size = Math.random() * 3 + 2;
+        const duration = 8 + Math.random() * 6;
+        const delay = Math.random() * 8;
+        flake.style.left = `${Math.random() * width}px`;
+        flake.style.width = `${size}px`;
+        flake.style.height = `${size}px`;
+        flake.style.animationDuration = `${duration}s`;
+        flake.style.animationDelay = `${delay}s`;
+        flake.style.opacity = `${0.45 + Math.random() * 0.4}`;
+        snow.appendChild(flake);
+      }
+    }
+
+    createSnow(42);
   </script>
 </body>
 </html>
